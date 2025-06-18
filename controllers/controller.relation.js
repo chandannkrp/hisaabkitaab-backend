@@ -54,81 +54,73 @@ export const getUserClients = async (req, res) => {
 }
 
 export const addNewUserClient = async (req, res) => {
-   try{
-    const userId  = req.user._id;
-    const newClientData = req.body;
-    const { name, email, companyName } = newClientData;
+  try {
+    const userId = req.user._id;
+    const { name, email, companyName } = req.body;
 
-    const newClientExisting = await User.findOne({email: email});
+    // Prevent user from adding themselves
+    if (req.user.email === email) {
+      return res.status(400).json({ message: "You cannot add yourself as a client" });
+    }
 
-    if (newClientExisting) {
-       if(newClientExisting.email == req.user.email){
-        return res.status(400).json({ message: "You cannot add yourself as a client" });
-        }
+    const existingUser = await User.findOne({ email });
 
-        //Bug fix #1: 13/6/25 : User cannot add two clients with same email
-        if(newClientExisting.email === email){
-          return res.status(400).json({ message: "Client with this email already exists" });
-        }
+    if (existingUser) {
+      const existingUserId = existingUser._id;
 
-       const newRelationActive = await BusinessRelationship.findOne({
+      // Check if an active relationship already exists
+      const existingActiveRelation = await BusinessRelationship.findOne({
         primaryBusiness: userId,
-        relatedBusiness: newClientExisting._id,
+        relatedBusiness: existingUserId,
         isActive: true,
       });
 
-      const newRelationInactive = await BusinessRelationship.findOne({
+      if (existingActiveRelation) {
+        return res.status(400).json({ message: "Relation already exists with this client" });
+      }
+
+      // Check if an inactive relationship exists
+      const existingInactiveRelation = await BusinessRelationship.findOne({
         primaryBusiness: userId,
-        relatedBusiness: newClientExisting._id,
+        relatedBusiness: existingUserId,
         isActive: false,
       });
 
-
-      if (newRelationActive) {
-        return res.status(400).json({ message: "Relation already exists" });
+      if (existingInactiveRelation) {
+        existingInactiveRelation.isActive = true;
+        await existingInactiveRelation.save();
+        return res.status(200).json({ message: "Client reactivated successfully", userId, client: existingUser });
       }
 
-      if (newRelationInactive) {
-        // Reactivate the existing relationship
-        newRelationInactive.isActive = true;
-        await newRelationInactive.save();
-        return res.status(200).json({ message: "Client added successfully", userId, newClientExisting });
-      }
-
-      // Create a new relation
+      // Otherwise, create a new relationship
       const relation = new BusinessRelationship({
         primaryBusiness: userId,
-        relatedBusiness: newClientExisting._id,
+        relatedBusiness: existingUserId,
       });
       await relation.save();
-      return res.status(200).json({ message: "Client added successfully", userId, newClientExisting });
+
+      return res.status(200).json({ message: "Client added successfully", userId, client: existingUser });
     }
-   
 
-    // Create a new client
-    const newClient = new User({
-      name,
-      email,
-      companyName,
-    });
-
+    // Create a new client user
+    const newClient = new User({ name, email, companyName });
     await newClient.save();
 
-    // Create a new relation
+    // Create a new relationship
     const relation = new BusinessRelationship({
       primaryBusiness: userId,
       relatedBusiness: newClient._id,
     });
     await relation.save();
 
-    res.status(200).json({ message: "Client added successfully", userId, newClientData });
+    return res.status(200).json({ message: "Client added successfully", userId, client: newClient });
 
-   }
-    catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-}
+  } catch (error) {
+    console.error("Error adding client:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 export const removeUserClientById = async (req, res) => {
   const userId = req.user._id;

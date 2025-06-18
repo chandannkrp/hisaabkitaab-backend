@@ -1,9 +1,7 @@
 import { Router } from "express";
 import authenticate from "../middlewares/middleware.auth.js";
-import checkRole from "../middlewares/middleware.role.js";
 import {
   createNewTransaction,
-  createTransaction,
   getTransactions,
   uploadFilesToS3,
 } from "../controllers/controller.transaction.js";
@@ -14,15 +12,6 @@ const router = Router();
 
 router.get("/", authenticate, getTransactions);
 
-router.post(
-  "/",
-  authenticate,
-  checkRole(["business", "admin", "agent"]),
-  generateTransactionId,
-  upload.array("files"),
-  uploadFilesToS3,
-  createTransaction,
-);
 
 router.post(
   "/upload",
