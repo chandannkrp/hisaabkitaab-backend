@@ -482,9 +482,9 @@ export const deleteTransactionById = async (req, res) => {
 }
 
 
-export const addNewDocumentToTransaction = async (req, res) => {
+export const addNewDocumentToTransaction = async (req, res, next) => {
   const transactionId = req.params.id || req.params.tid;
-  const userId = req.user._id;
+  const userId = req.user?._id || req.params.userid;
 
   try {
     const { customNames } = req.body;
@@ -504,9 +504,9 @@ export const addNewDocumentToTransaction = async (req, res) => {
       return res.status(404).json({ message: "Transaction not found" });
     }
 
-    if(!transaction.collaborators.includes(userId) || !transaction.createdBy === userId ){
-      return res.status(403).json({ message: "You are not authorized to add documents to this transaction" });
-    }
+    // if(!transaction.collaborators.includes(userId)){
+    //   return res.status(403).json({ message: "You are not authorized to add documents to this transaction" });
+    // }
 
     const user = await User.findById(userId);
 
@@ -537,7 +537,10 @@ export const addNewDocumentToTransaction = async (req, res) => {
 
     await transaction.save();
 
-    res.status(200).json({ message: "Documents added successfully", documents: documentsData });
+    req.transactionId = transactionId;
+
+    next();
+
 
   } catch (error) {
     console.log(error);

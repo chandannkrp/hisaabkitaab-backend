@@ -85,7 +85,7 @@ export const updateVerificationTimeline = async (req, res) => {
 export const updateTransactionDetailsTimeline = async (req, res) => {
     try {
       const transactionId = req.transactionId;
-      const performedByUserId = req.user._id;
+      const performedByUserId = req.user?._id || req.params.userid;
 
       const updatedActivity = new TransactionTimeline({
         transactionId,
@@ -105,3 +105,4 @@ export const updateTransactionDetailsTimeline = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 }
+

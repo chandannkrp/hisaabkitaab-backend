@@ -112,7 +112,8 @@ router.post(
   "/transaction/:tid/documents/:userid",
   upload.array("documents[]", 5),
   uploadFilesToS3,
-  addNewDocumentToTransaction
+  addNewDocumentToTransaction,
+  updateTransactionDetailsTimeline
 );
 
 //timeline routes
