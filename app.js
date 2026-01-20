@@ -3,9 +3,12 @@ import dotenv from 'dotenv'
 import helmet from 'helmet'
 import cors from 'cors'
 import morgan from 'morgan'
+import http from 'http'
+import { initSocket } from './socket/index.js'
 
 import connectDB from './config/db.connection.js'
 import userRoutes from './routes/route.user.js'
+import chatRoutes from './routes/route.chat.js'
 import transactionRoutes from './routes/route.transaction.js'
 import cookieParser from 'cookie-parser'
 
@@ -20,6 +23,10 @@ dotenv.config()
 
 //app initialization
 export const app = express()
+
+// Socket.io setup
+const server = http.createServer(app);
+initSocket(server);
 
 // proxy setup for vercel
 app.set('trust proxy', 1);
@@ -47,13 +54,16 @@ express.urlencoded({ extended: true })
 //routes
 app.use('/api/users', userRoutes)
 app.use('/api/transactions', transactionRoutes)
+app.use('/api/chats', chatRoutes)
 app.use('/', (req, res) => {
     res.send('I am alive')
 })
 
 
+
 connectDB(process.env.MONGO_URI)
 
-app.listen(process.env.PORT, () => {
+server.listen(process.env.PORT, () => {
     console.log(`Server started at http://localhost:${process.env.PORT}`)
 })
+
