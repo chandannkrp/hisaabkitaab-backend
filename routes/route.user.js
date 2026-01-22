@@ -7,6 +7,8 @@ import {
   resetPassword,
   resendOtp,
   logoutUser,
+  authorizeEmail,
+  authorizeEmailOTP,
 } from "../controllers/controller.user.js";
 import authenticate from "../middlewares/middleware.auth.js";
 import {
@@ -102,19 +104,21 @@ router.delete("/transaction/:id", authenticate, deleteTransactionById);
 
 //transaction public api routes
 router.get("/transaction/:id/documents", getTransactionDocumentsById);
-router.get("/transaction/:tid/user/:userid", getTransactionById);
+router.get("/transaction-view/:tid", getTransactionById);
 router.post(
-  "/transaction/:tid/verify/:userid",
+  "/transaction/:tid/pub/verify",
   verifyTransactionById,
   updateVerificationTimeline
 );
 router.post(
-  "/transaction/:tid/documents/:userid",
+  "/transaction/:tid/documents",
   upload.array("documents[]", 5),
   uploadFilesToS3,
   addNewDocumentToTransaction,
   updateTransactionDetailsTimeline
 );
+router.post("/transaction/authorize-email", authorizeEmail);
+router.post("/transaction/authorize-email/verify-otp", authorizeEmailOTP);
 
 //timeline routes
 router.get("/timeline/:id", authenticate, getTimelineById);

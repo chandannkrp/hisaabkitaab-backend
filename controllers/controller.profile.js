@@ -55,7 +55,8 @@ export const deleteProfile = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { company, address } = req.body;
+    const { username, company, address } = req.body;
+
 
     const user = await User.findById(userId);
 
@@ -65,8 +66,9 @@ export const updateProfile = async (req, res) => {
     }
 
     //update user
-    user.address = address || user.address;
-    user.companyName = company || user.companyName;
+    user.name =  username? username : user.username;
+    user.address =  address? address : user.address;
+    user.companyName =  company? company : user.companyName;
 
     await user.save();
 
