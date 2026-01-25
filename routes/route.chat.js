@@ -1,17 +1,10 @@
 import express from "express";
-import Message from "../models/model.message.js";
+import { getChatMessagesByTransactionId } from "../controllers/controller.chats.js";
+import { authenticateToken } from "../middlewares/middleware.auth.js";
 
 const router = express.Router();
 
-router.get("/:tid", async (req, res) => {
-    const { tid } = req.params;
-  
-    const messages = await Message.find({ tid })
-      .populate("senderId", "name email") // 👈 important
-      .sort({ createdAt: 1 });
-  
-    res.json(messages);
-  });
+router.get("/:tid", authenticateToken, getChatMessagesByTransactionId);
   
 
 export default router;

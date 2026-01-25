@@ -347,7 +347,6 @@ export const getTransactionById = async (req, res) => {
 
     //requesting user has verified the transaction or not
     const userHasVerified = transaction.verifiedBy.map((id) => id.toString()).includes(userId._id.toString());
-    console.log(userHasVerified)
 
     //updating the collaborators object to include the owner user
     collaborators = collaborators.map((collaborator) => {
@@ -357,7 +356,14 @@ export const getTransactionById = async (req, res) => {
       };
     });
 
-    res.status(200).json({ transaction, collaborators, userHasVerified });
+    // attach some info about the user requesting 
+    const requestingUserInfo = {
+      name: userId.name,
+      email: userId.email,
+      company: userId.companyName,
+    };
+
+    res.status(200).json({ transaction, collaborators, requestingUserInfo, userHasVerified });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
