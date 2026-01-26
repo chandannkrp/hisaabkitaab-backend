@@ -57,9 +57,13 @@ express.urlencoded({ extended: true })
 app.use('/api/users', userRoutes)
 app.use('/api/transactions', transactionRoutes)
 app.use('/api/chats', chatRoutes)
-app.use('/', (req, res) => {
-    res.send('OK');
-});
+app.use((req, res, next) => {
+    if (req.path.startsWith('/socket.io')) {
+      return next(); // let Socket.IO handle it
+    }
+    return res.send('I am alive');
+  });
+  
 app.get("/health", (req, res) => {
     res.status(200).send("Server is healthy");
 });
