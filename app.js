@@ -13,8 +13,8 @@ import transactionRoutes from './routes/route.transaction.js'
 import cookieParser from 'cookie-parser'
 
 const allowedOrigins = [
-    process.env.NODE_ENV === 'production' ? process.env.DEP_URL : process.env.CLIENT_URL,
-    process.env.CLIENT_URL_2,
+    process.env.NODE_ENV === 'production' ?[ process.env.DEP_URL, process.env.DEP_URL_WWW] : process.env.CLIENT_URL,
+    process.env.CLIENT_URL_2
 ]
 
 //env variables
@@ -55,10 +55,11 @@ express.urlencoded({ extended: true })
 app.use('/api/users', userRoutes)
 app.use('/api/transactions', transactionRoutes)
 app.use('/api/chats', chatRoutes)
-app.use('/', (req, res) => {
-    res.send('I am alive')
-})
-
+app.get('/health', (req, res) => {
+    res.send('OK');
+  });
+  
+  
 
 
 connectDB(process.env.MONGO_URI)
