@@ -57,9 +57,12 @@ express.urlencoded({ extended: true })
 app.use('/api/users', userRoutes)
 app.use('/api/transactions', transactionRoutes)
 app.use('/api/chats', chatRoutes)
-app.get('/health', (req, res) => {
+app.use('/', (req, res) => {
     res.send('OK');
-  });
+});
+app.get("/health", (req, res) => {
+    res.status(200).send("Server is healthy");
+});
   
   
 
