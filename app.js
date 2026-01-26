@@ -13,7 +13,9 @@ import transactionRoutes from './routes/route.transaction.js'
 import cookieParser from 'cookie-parser'
 
 const allowedOrigins = [
-    process.env.NODE_ENV === 'production' ?[ process.env.DEP_URL, process.env.DEP_URL_WWW] : process.env.CLIENT_URL,
+    process.env.DEP_URL,
+    process.env.DEP_URL_WWW,
+    process.env.CLIENT_URL,
     process.env.CLIENT_URL_2
 ]
 

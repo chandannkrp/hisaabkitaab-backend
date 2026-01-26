@@ -7,6 +7,8 @@ export const initSocket = (server) => {
       origin: [
         process.env.CLIENT_URL,
         process.env.CLIENT_URL_2,
+        process.env.DEP_URL,
+        process.env.DEP_URL_WWW,
       ],
       credentials: true,
     },
@@ -21,23 +23,23 @@ export const initSocket = (server) => {
     });
 
     socket.on("send_message", async ({ tid, senderId, text }) => {
-        const message = await Message.create({
-          tid,
-          senderId,
-          text,
-        });
-      
-        const populatedMessage = await Message.findById(message._id)
-          .populate("senderId", "name");
-      
-        io.to(tid).emit("receive_message", populatedMessage);
+      const message = await Message.create({
+        tid,
+        senderId,
+        text,
       });
+
+      const populatedMessage = await Message.findById(message._id).populate(
+        "senderId",
+        "name"
+      );
+
+      io.to(tid).emit("receive_message", populatedMessage);
+    });
 
     socket.on("disconnect", () => {
       console.log("❌ Socket disconnected:", socket.id);
     });
-
- 
   });
 
   return io;
