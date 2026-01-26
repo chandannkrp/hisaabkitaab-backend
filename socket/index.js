@@ -3,6 +3,8 @@ import Message from "../models/model.message.js";
 
 export const initSocket = (server) => {
   const io = new Server(server, {
+    path: "/socket.io",
+    transports: ["websocket", "polling"],
     cors: {
       origin: [
         process.env.CLIENT_URL,
