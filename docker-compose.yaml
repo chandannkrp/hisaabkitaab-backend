@@ -10,4 +10,17 @@ services:
       always
     volumes: 
       - ./logs:/app/logs
+    networks:
+      - hisaabkitaabnet
+
+    ai-service:
+      image: chandannn/hisaabkitaab-ai-service:latest
+      container_name: ai-service
+      env_file:
+        - /srv/hisaabkitaab-ai-service/.env
+      volumes:
+        - /srv/hisaabkitaab-ai-service/vector_store:/app/vector_store/storage
+      restart: unless-stopped
+      networks:
+        - hisaabkitaabnet
     
