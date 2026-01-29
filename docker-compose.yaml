@@ -1,4 +1,3 @@
-version: '3.8'
 services: 
   app: 
     container_name : hisaabkitaab-server
@@ -11,8 +10,6 @@ services:
       always
     volumes: 
       - ./logs:/app/logs
-    networks:
-      - hisaabkitaabnet
     depends_on:
       - ai-service
 
@@ -24,6 +21,6 @@ services:
     volumes:
       - /srv/hisaabkitaab-ai-service/vector_store:/app/vector_store/storage
     restart: unless-stopped
-    networks:
-      - hisaabkitaabnet
-  
+    ports:
+      - "8000:8000"
+    
