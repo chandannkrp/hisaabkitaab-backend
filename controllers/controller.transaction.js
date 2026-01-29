@@ -7,6 +7,7 @@ import { sendEmail } from "../services/service.mailling.js";
 import { deleteFromBucket, uploadToBucket } from "../services/service.s3.js";
 import { Document } from "../models/model.document.js";
 import jwt from "jsonwebtoken";
+import { ingestTransaction } from "./controller.ai.js";
 
 export const createTransaction = async (req, res) => {
   try {
@@ -142,6 +143,7 @@ export const uploadFilesToS3 = async (req, res, next) => {
   try {
     const files = req.files;
     const { customNames } = req.body;
+    const transactionId = req.transactionId || req.body.transactionId;
     const mimeTypes = files.map((file) => file.mimetype);
 
     if (!files) {
@@ -153,7 +155,7 @@ export const uploadFilesToS3 = async (req, res, next) => {
       files.map(async (file, index) => {
         const result = await uploadToBucket(
           file.buffer,
-          req.transactionId + "-" + customNames[index],
+          transactionId + "-" + customNames[index],
           file.mimetype,
           "transaction"
         );
@@ -186,15 +188,6 @@ export const addNewTransaction = async (req, res, next) => {
     const mimeTypes = req.mimeTypes;
     const parsedCollaborators = JSON.parse(collaborators);
 
-    //  console.log('Transaction Data:', {
-    //   ownerEmail,
-    //   transactionTitle,
-    //   description,
-    //   collaborators: parsedCollaborators,
-    //   documents,
-    //   files: req.files,
-    // });
-
     //validate required fields
     if (!transactionTitle || !ownerEmail || !collaborators) {
       return res.status(400).json({ message: "All fields are required" });
@@ -221,6 +214,9 @@ export const addNewTransaction = async (req, res, next) => {
         fileName: customNames[index],
         fileUrl: file,
         fileType: mimeTypes[index],
+        bucket: process.env.AWS_BUCKET_NAME,
+        s3Key: `user-transaction/${req.transactionId}-${customNames[index]}`,
+        key: file.split("/").pop(),
         uploadedBy: user.name,
       };
       const document = new Document(newFile);
@@ -256,30 +252,30 @@ export const addNewTransaction = async (req, res, next) => {
     await transaction.save();
 
     //send emails to the collaborators
-    for (const collaborator of collaboratorsProfiles) {
-      await sendEmail(
-        collaborator.email,
-        "New transaction initiated by " +
-          `${user.companyName ? user.companyName : user.name}`,
-        "transactionNotification.html",
-        {
-          userName: collaborator.name,
-          transactionTitle: transactionTitle,
-          transactionId: req.transactionId,
-          createdBy:
-            user.name + `${user.companyName ? ` (${user.companyName})` : ""}`,
-          tlink: `${
-            process.env.NODE_ENV === "development"
-              ? process.env.CLIENT_URL_2
-              : process.env.DEP_URL
-          }/transaction/pre-authorize?tid=${req.transactionId}&userId=${
-            collaborator._id
-          }`,
-        }
-      );
-    }
-
-    // res.status(200).json({message: "Transaction created successfully"});
+    const willBroadcastEmails = process.env.NODE_ENV !== "development";
+    if (willBroadcastEmails)
+      for (const collaborator of collaboratorsProfiles) {
+        await sendEmail(
+          collaborator.email,
+          "New transaction initiated by " +
+            `${user.companyName ? user.companyName : user.name}`,
+          "transactionNotification.html",
+          {
+            userName: collaborator.name,
+            transactionTitle: transactionTitle,
+            transactionId: req.transactionId,
+            createdBy:
+              user.name + `${user.companyName ? ` (${user.companyName})` : ""}`,
+            tlink: `${
+              process.env.NODE_ENV === "development"
+                ? process.env.CLIENT_URL_2
+                : process.env.DEP_URL
+            }/transaction/pre-authorize?tid=${req.transactionId}&userId=${
+              collaborator._id
+            }`,
+          }
+        );
+      }
 
     next();
   } catch (error) {
@@ -346,7 +342,9 @@ export const getTransactionById = async (req, res) => {
     collaborators.push(ownerUser);
 
     //requesting user has verified the transaction or not
-    const userHasVerified = transaction.verifiedBy.map((id) => id.toString()).includes(userId._id.toString());
+    const userHasVerified = transaction.verifiedBy
+      .map((id) => id.toString())
+      .includes(userId._id.toString());
 
     //updating the collaborators object to include the owner user
     collaborators = collaborators.map((collaborator) => {
@@ -356,14 +354,21 @@ export const getTransactionById = async (req, res) => {
       };
     });
 
-    // attach some info about the user requesting 
+    // attach some info about the user requesting
     const requestingUserInfo = {
       name: userId.name,
       email: userId.email,
       company: userId.companyName,
     };
 
-    res.status(200).json({ transaction, collaborators, requestingUserInfo, userHasVerified });
+    res
+      .status(200)
+      .json({
+        transaction,
+        collaborators,
+        requestingUserInfo,
+        userHasVerified,
+      });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
@@ -418,9 +423,7 @@ export const verifyTransactionById = async (req, res, next) => {
   const verfiedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
   const user = await User.findById(verfiedToken.userId);
 
-
   const userId = req.user?._id || user._id;
-
 
   try {
     const transaction = await Transaction.findOne({
@@ -446,8 +449,8 @@ export const verifyTransactionById = async (req, res, next) => {
       transaction.collaborators.length
     ) {
       transaction.status = "completed";
-      
-      //send transaction completion emails 
+
+      //send transaction completion emails
       await sendEmail(
         transaction.ownerEmailId,
         "Transaction Completed: " + transaction.title,
@@ -463,6 +466,11 @@ export const verifyTransactionById = async (req, res, next) => {
     await transaction.save();
 
     req.transactionId = transactionId;
+
+    await ingestTransaction({
+      transactionId: transactionId,
+      ingestionReason: "VERIFICATION_UPDATE",
+    })
 
     next();
   } catch (error) {
@@ -505,6 +513,7 @@ export const patchTransactionDetailsById = async (req, res, next) => {
     await transaction.save();
 
     req.transactionId = transactionId;
+    req.ingestionReason = "DETAILS_UPDATE";
     next();
   } catch (error) {
     console.log(error);
@@ -540,10 +549,41 @@ export const deleteTransactionById = async (req, res) => {
       transactionId: transactionId,
     });
 
-    //delete the documents from s3 bucket
-    // await Document.deleteMany({
-    //   transactionId: transactionId
-    // });
+    // Delete each document associated with the transaction
+    try {
+      const documents = await Document.find({ transactionId: transactionId });
+
+      // Delete files from S3 and MongoDB in parallel
+      await Promise.all(
+        documents.map(async (document) => {
+          try {
+            await deleteFromBucket(document.s3Key);
+            console.log(`Deleted document ${s3Key} from S3`);
+          } catch (error) {
+            console.log(
+              `Error deleting document ${document._id} from S3:`,
+              error
+            );
+          }
+        })
+      );
+
+      // Delete documents from MongoDB
+      await Document.deleteMany({ transactionId: transactionId });
+      console.log(
+        `Deleted documents for transaction ${transactionId} from MongoDB`
+      );
+    } catch (error) {
+      console.log(
+        `Error processing documents for transaction ${transactionId}:`,
+        error
+      );
+    }
+
+    // delete the documents from s3 bucket
+    await Document.deleteMany({
+      transactionId: transactionId,
+    });
 
     //delete the timeline entries
     await TransactionTimeline.deleteMany({
@@ -600,6 +640,8 @@ export const addNewDocumentToTransaction = async (req, res, next) => {
         fileName: customNames[index],
         fileUrl: file,
         fileType: mimeTypes[index],
+        bucket: process.env.AWS_BUCKET_NAME,
+        s3Key: `user-transaction/${transactionId}-${customNames[index]}`,
         uploadedBy: user.name,
       };
       const document = new Document(newFile);
@@ -623,6 +665,7 @@ export const addNewDocumentToTransaction = async (req, res, next) => {
 
     req.transactionId = transactionId;
 
+    
     next();
   } catch (error) {
     console.log(error);

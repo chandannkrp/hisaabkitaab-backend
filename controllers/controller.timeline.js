@@ -1,6 +1,7 @@
 import { TransactionTimeline } from "../models/model.transaction.js";
 import { User } from "../models/model.user.js";
 import jwt from "jsonwebtoken";
+import { ingestTransaction } from "./controller.ai.js";
 
 export const initTimeline = async (req, res) => {
   try {
@@ -19,7 +20,13 @@ export const initTimeline = async (req, res) => {
       return res.status(404).json({ message: "Activity couldn't be recorded" });
     }
 
-    res.status(200).json({ message: "Transaction created succesfull!" });
+    await ingestTransaction({
+      transactionId: transactionId,
+      ingestionReason: "FULL_REBUILD",
+    })
+
+    res.status(200).json({ message: "Transaction created successfully!" });
+
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
@@ -116,9 +123,14 @@ export const updateTransactionDetailsTimeline = async (req, res) => {
       return res.status(404).json({ message: "Activity couldn't be recorded" });
     }
 
-    res
-      .status(200)
-      .json({ message: "Transaction details updated successfully!" });
+    await ingestTransaction({
+      transactionId: transactionId,
+      ingestionReason: "DOCUMENT_UPLOADED",
+    })
+
+
+  
+    res.status(200).json({ message: "Transaction updated successfully!" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });

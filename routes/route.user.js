@@ -10,7 +10,7 @@ import {
   authorizeEmail,
   authorizeEmailOTP,
 } from "../controllers/controller.user.js";
-import authenticate from "../middlewares/middleware.auth.js";
+import authenticate, { authenticateToken } from "../middlewares/middleware.auth.js";
 import {
   apiLimiter,
   forgotPasswordLimiter,
@@ -87,18 +87,18 @@ router.post(
 );
 router.post(
   "/transaction",
-  authenticate,
+  authenticateToken,
   generateTransactionId,
   upload.array("documents[]", 5),
   uploadFilesToS3,
   addNewTransaction,
-  initTimeline
+  initTimeline,
 );
 router.patch(
   "/transaction/:transactionId/details",
   authenticate,
   patchTransactionDetailsById,
-  updateTransactionDetailsTimeline
+  updateTransactionDetailsTimeline,
 );
 router.delete("/transaction/:id", authenticate, deleteTransactionById);
 
@@ -115,7 +115,7 @@ router.post(
   upload.array("documents[]", 5),
   uploadFilesToS3,
   addNewDocumentToTransaction,
-  updateTransactionDetailsTimeline
+  updateTransactionDetailsTimeline,
 );
 router.post("/transaction/authorize-email", authorizeEmail);
 router.post("/transaction/authorize-email/verify-otp", authorizeEmailOTP);

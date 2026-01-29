@@ -35,12 +35,12 @@ export const uploadToBucket = async (fileBuffer, fileName, fileType, userId, loc
 }
 
 //Delete file from S3 bucket
-export const deleteFromBucket = async (fileName, userId) => {
+export const deleteFromBucket = async (s3Key) => {
     try{
         await s3Client.send(
             new DeleteObjectCommand({
                 Bucket: process.env.AWS_BUCKET_NAME,
-                Key: `user-${userId}/transactions/${fileName}`,
+                Key: s3Key,
             })
         )
     }

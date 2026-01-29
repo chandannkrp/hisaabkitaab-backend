@@ -12,6 +12,12 @@ const transactionDocumentSchema = new Schema({
   fileUrl: {
     type: String,
   },
+  s3Key:{
+    type: String,
+  },
+  bucket:{
+    type: String,
+  },
   fileType: {
     type: String,
     required: true,
