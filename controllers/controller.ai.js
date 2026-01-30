@@ -1,17 +1,15 @@
 import axios from "axios";
 
-export const ingestTransaction = async ({
+export const ingestTransaction = async ({ transactionId, ingestionReason }) => {
+  const { HK_AI_SERVICE_URL, HK_INTERNAL_API_KEY } = process.env;
+
+  console.log("INGESTION INPUT →", {
     transactionId,
     ingestionReason,
-  }) => {
-    const { HK_AI_SERVICE_URL, HK_INTERNAL_API_KEY } = process.env;
+  });
 
-    console.log("INGESTION INPUT →", {
-        transactionId,
-        ingestionReason,
-      });
-  
-    await axios.get(
+  try {
+    const response = await axios.get(
       `${HK_AI_SERVICE_URL}/ingest/transaction/${transactionId}?reason=${ingestionReason}`,
       {
         headers: {
@@ -21,6 +19,10 @@ export const ingestTransaction = async ({
         timeout: 30000,
       }
     );
+    console.log("Ingestion response");
+  } catch (error) {
+    console.error("Error ingesting transaction to AI service:");
+  }
 };
 
 export const chatClient = async (req, res) => {
