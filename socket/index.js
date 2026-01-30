@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import Message from "../models/model.message.js";
 import { ingestTransaction } from "../controllers/controller.ai.js";
+import { publishIngestionEvent } from "../services/service.publish-sqs.js";
 
 export const initSocket = (server) => {
   const io = new Server(server, {
@@ -37,10 +38,15 @@ export const initSocket = (server) => {
         "name"
       );
 
-      await ingestTransaction({
-        transactionId: tid,
-        ingestionReason: "MESSAGE_ADDED",
-      });
+      try{
+        publishIngestionEvent({
+          transactionId: tid,
+          ingestionReason: "MESSAGE_ADDED",
+        })
+      }
+      catch(error){
+        console.error("Error publishing ingestion event:", error)
+      }
 
       io.to(tid).emit("receive_message", populatedMessage);
     });
