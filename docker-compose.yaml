@@ -10,8 +10,7 @@ services:
       always
     volumes: 
       - ./logs:/app/logs
-    depends_on:
-      - ai-service
+    
 
   
     
