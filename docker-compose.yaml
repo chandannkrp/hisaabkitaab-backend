@@ -13,14 +13,5 @@ services:
     depends_on:
       - ai-service
 
-  ai-service:
-    image: chandannn/hisaabkitaab-ai-service:latest
-    container_name: ai-service
-    env_file:
-      - /srv/hisaabkitaab-ai-service/.env
-    volumes:
-      - /srv/hisaabkitaab-ai-service/vector_store:/app/vector_store/storage
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
+  
     
