@@ -1,4 +1,5 @@
 import axios from "axios";
+import { publishIngestionEvent } from "../services/service.publish-sqs.js";
 
 export const ingestTransaction = async ({ transactionId, ingestionReason }) => {
   try {
@@ -8,28 +9,27 @@ export const ingestTransaction = async ({ transactionId, ingestionReason }) => {
       ingestionReason
     );
     publishIngestionEvent({
-      transactionId: tid,
+      transactionId: transactionId,
       ingestionReason: ingestionReason,
     });
   } catch (error) {
-    console.error("Error ingesting transaction to AI service:");
+    console.error("Error ingesting transaction to AI service:" ,error);
   }
 };
 
 export const chatClient = async (req, res) => {
-  const { HK_AI_SERVICE_URL, HK_INTERNAL_API_KEY } = process.env;
   const { transactionId, question } = req.body;
 
   try {
     const response = await axios.post(
-      `${HK_AI_SERVICE_URL}/ask`,
+      `${process.env.HK_AI_SERVICE_URL}/ask`,
       {
         transaction_id: transactionId,
         question: question,
       },
       {
         headers: {
-          "x-internal-key": HK_INTERNAL_API_KEY,
+          "x-internal-key": process.env.HK_INTERNAL_API_KEY,
           "Content-Type": "application/json",
         },
         timeout: 30000,

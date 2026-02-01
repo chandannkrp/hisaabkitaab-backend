@@ -1,7 +1,6 @@
 import { Router } from "express";
 import authenticate, { authenticateToken } from "../middlewares/middleware.auth.js";
 import {
-  createNewTransaction,
   getTransactions,
   uploadFilesToS3,
 } from "../controllers/controller.transaction.js";
@@ -20,14 +19,14 @@ router.post(
   uploadFilesToS3
 );
 
-router.post(
-  "/new-transaction",
-  authenticateToken,
-  generateTransactionId,
-  upload.array("files"),
-  uploadFilesToS3,
-  createNewTransaction
-)
+// router.post(
+//   "/new-transaction",
+//   authenticateToken,
+//   generateTransactionId,
+//   upload.array("files"),
+//   uploadFilesToS3,
+//   createNewTransaction
+// )
 
 
 

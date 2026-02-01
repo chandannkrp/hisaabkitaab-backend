@@ -1,4 +1,4 @@
-import crytpo from "crypto";
+import crypto from "crypto";
 
 export const generateTransactionId = async (req, res, next) => {
   try {
