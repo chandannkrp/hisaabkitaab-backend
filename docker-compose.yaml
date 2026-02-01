@@ -10,6 +10,8 @@ services:
       always
     volumes: 
       - ./logs:/app/logs
+    networks:
+      - hisaab-net
     
 
   
