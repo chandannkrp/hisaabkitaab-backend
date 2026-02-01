@@ -1,3 +1,8 @@
+
+networks:
+  hisaab-net:
+    external: true
+
 services: 
   app: 
     container_name : hisaabkitaab-server
