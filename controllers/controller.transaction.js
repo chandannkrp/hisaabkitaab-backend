@@ -3,7 +3,8 @@ import {
   Transaction,
   TransactionTimeline,
 } from "../models/model.transaction.js";
-import { sendEmail } from "../services/service.mailling.js";
+// import { sendEmail } from "../services/service.mailling.js";
+import {sendEmail} from "../services/service.emailService.js"
 import { deleteFromBucket, uploadToBucket } from "../services/service.s3.js";
 import { Document } from "../models/model.document.js";
 import jwt from "jsonwebtoken";
@@ -560,7 +561,7 @@ export const deleteTransactionById = async (req, res) => {
         documents.map(async (document) => {
           try {
             await deleteFromBucket(document.s3Key);
-            console.log(`Deleted document ${s3Key} from S3`);
+            console.log(`Deleted document ${document.s3Key} from S3`);
           } catch (error) {
             console.log(
               `Error deleting document ${document._id} from S3:`,

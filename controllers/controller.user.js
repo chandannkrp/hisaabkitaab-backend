@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 import { generateOTP } from "../utils/generateOTP.js";
-import { sendEmail } from "../services/service.mailling.js";
+import { sendEmail } from "../services/service.emailService.js";
 import logger from "../utils/logger.js";
 import { Transaction } from "../models/model.transaction.js";
 
