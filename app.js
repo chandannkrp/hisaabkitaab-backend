@@ -11,6 +11,21 @@ import userRoutes from './routes/route.user.js'
 import chatRoutes from './routes/route.chat.js'
 import transactionRoutes from './routes/route.transaction.js'
 import cookieParser from 'cookie-parser'
+import { globalErrorHandler } from './middlewares/middleware.error.js'
+import logger from './utils/logger.js'
+
+// Process-level safety net: without these, any uncaught exception or
+// unhandled promise rejection crashes the whole Node process.
+process.on('uncaughtException', (err) => {
+    logger.error(`UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}`)
+    console.error('UNCAUGHT EXCEPTION:', err)
+})
+
+process.on('unhandledRejection', (reason) => {
+    const err = reason instanceof Error ? reason : new Error(String(reason))
+    logger.error(`UNHANDLED REJECTION: ${err.message}\n${err.stack}`)
+    console.error('UNHANDLED REJECTION:', err)
+})
 
 const allowedOrigins = [
     process.env.DEP_URL,
@@ -67,8 +82,9 @@ app.use((req, res, next) => {
 app.get("/health", (req, res) => {
     res.status(200).send("Server is healthy");
 });
-  
-  
+
+// Global error handler — must be registered after all routes
+app.use(globalErrorHandler)
 
 
 connectDB(process.env.MONGO_URI)

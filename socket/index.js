@@ -27,28 +27,27 @@ export const initSocket = (server) => {
     });
 
     socket.on("send_message", async ({ tid, senderId, text }) => {
-      const message = await Message.create({
-        tid,
-        senderId,
-        text,
-      });
+      try {
+        const message = await Message.create({
+          tid,
+          senderId,
+          text,
+        });
 
-      const populatedMessage = await Message.findById(message._id).populate(
-        "senderId",
-        "name"
-      );
+        const populatedMessage = await Message.findById(message._id).populate(
+          "senderId",
+          "name"
+        );
 
-      try{
         publishIngestionEvent({
           transactionId: tid,
           ingestionReason: "MESSAGE_ADDED",
-        })
-      }
-      catch(error){
-        console.error("Error publishing ingestion event:", error)
-      }
+        });
 
-      io.to(tid).emit("receive_message", populatedMessage);
+        io.to(tid).emit("receive_message", populatedMessage);
+      } catch (error) {
+        console.error("Error handling send_message:", error);
+      }
     });
 
     socket.on("disconnect", () => {

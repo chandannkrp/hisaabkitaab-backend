@@ -3,7 +3,7 @@ import { sqs } from "../config/config.sqs.js"
 
 export const publishIngestionEvent = async (payload) => {
     try{
-        sqs.send(
+        await sqs.send(
             new SendMessageCommand({
                 QueueUrl: process.env.HK_SQS_INGESTION_QUEUE_URL,
                 MessageBody: JSON.stringify(payload)
