@@ -7,11 +7,13 @@ services:
   app: 
     container_name : hisaabkitaab-server
     build: .
-    ports: 
+    ports:
       - "5000:5000"
     env_file:
-      - .env
-    restart: 
+      - .env.production
+    environment:
+      - NODE_ENV=production
+    restart:
       always
     volumes: 
       - ./logs:/app/logs

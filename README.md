@@ -91,7 +91,6 @@ hisaabkitaab-backend/
 │   └── model.activity.js         # Generic activity log schema
 ├── routes/
 │   ├── route.user.js             # /api/users — auth, profile, clients, categories, transactions, timeline
-│   ├── route.transaction.js      # /api/transactions — list, upload
 │   └── route.chat.js             # /api/chats — chat history + AI ask proxy
 ├── services/
 │   ├── service.s3.js             # Upload/delete objects in S3

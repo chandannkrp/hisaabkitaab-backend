@@ -1,21 +1,19 @@
 import jwt from "jsonwebtoken";
 import { User } from "../models/model.user.js";
-import dotenv from "dotenv";
-dotenv.config();
+import "../config/config.env.js";
 
 const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers["authorization"];
-    const token = req.cookies.token || (authHeader && authHeader.split(" ")[1]); // Bearer token;
+    const token = req.cookies.token || (authHeader && authHeader.split(" ")[1]); // Bearer token
 
-    // console.log("Token "+token);
     if (!token) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
     const verified = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(verified.userId);
-    if (!verified) {
+    if (!user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
@@ -27,8 +25,10 @@ const authenticate = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Internal server error" });
+    if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next(error);
   }
 };
 
@@ -43,17 +43,19 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     const verifiedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
-    const userId = await User.findById(verifiedToken.userId);
+    const user = await User.findById(verifiedToken.userId);
 
-    if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
-    req.user = userId;
+    req.user = user;
 
     next();
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Internal server error" });
+    if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next(error);
   }
 };
 
