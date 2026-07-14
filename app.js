@@ -27,16 +27,21 @@ process.on('unhandledRejection', (reason) => {
     console.error('UNHANDLED REJECTION:', err)
 })
 
-const allowedOrigins = [
-    process.env.DEP_URL,
-    process.env.DEP_URL_WWW,
-    process.env.CLIENT_URL,
-    process.env.CLIENT_URL_2
-]
-
 //env variables
 dotenv.config()
 
+const getAllowedOrigins = () => {
+    const origins = [
+        process.env.CLIENT_URL
+    ].filter(Boolean)
+
+    // Local dev frontends (Next.js) aren't in DEP_URL/CLIENT_URL, so allow them explicitly outside production
+    if (process.env.NODE_ENV !== 'production') {
+        origins.push('http://localhost:3000')
+    }
+
+    return origins
+}
 
 //app initialization
 export const app = express()
@@ -52,7 +57,7 @@ app.set('trust proxy', 1);
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
+        if (getAllowedOrigins().indexOf(origin) === -1) {
             const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
             return callback(new Error(msg), false);
         }
@@ -92,4 +97,4 @@ connectDB(process.env.MONGO_URI)
 server.listen(process.env.PORT, () => {
     console.log(`Server started at http://localhost:${process.env.PORT}`)
 })
-
+ 
