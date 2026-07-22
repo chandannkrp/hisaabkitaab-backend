@@ -21,7 +21,17 @@ export const initTimeline = asyncHandler(async (req, res) => {
     ingestionReason: "FULL_REBUILD",
   });
 
-  res.status(200).json({ message: "Transaction created successfully!" });
+  // notificationsDelivered is set by addNewTransaction; when false the transaction was
+  // created successfully but collaborator emails couldn't be delivered (e.g. SES sender
+  // domain not verified). Report that honestly instead of failing the request.
+  const notificationsDelivered = req.notificationsDelivered !== false;
+
+  res.status(200).json({
+    message: notificationsDelivered
+      ? "Transaction created successfully!"
+      : "Transaction created, but notification emails could not be sent.",
+    notificationsDelivered,
+  });
 });
 
 export const getTimelineById = asyncHandler(async (req, res) => {
