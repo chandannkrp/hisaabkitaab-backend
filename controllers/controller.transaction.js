@@ -114,31 +114,44 @@ export const addNewTransaction = asyncHandler(async (req, res, next) => {
   await transaction.save();
 
   //send emails to the collaborators
+  // Notifications are best-effort: the transaction is already persisted by this point,
+  // so a mail delivery failure (e.g. an unverified/expired SES sender domain) must not
+  // turn a successful creation into a 500. We track delivery and surface it downstream.
   const willBroadcastEmails = process.env.NODE_ENV !== "development";
+  let notificationsDelivered = true;
   if (willBroadcastEmails) {
     for (const collaborator of collaboratorsProfiles) {
-      await sendEmail(
-        collaborator.email,
-        "New transaction initiated by " +
-          `${user.companyName ? user.companyName : user.name}`,
-        "transactionNotification.html",
-        {
-          userName: collaborator.name,
-          transactionTitle: transactionTitle,
-          transactionId: req.transactionId,
-          createdBy:
-            user.name + `${user.companyName ? ` (${user.companyName})` : ""}`,
-          tlink: `${
-            process.env.NODE_ENV === "development"
-              ? process.env.CLIENT_URL_2
-              : process.env.DEP_URL
-          }/transaction/pre-authorize?tid=${req.transactionId}&userId=${
-            collaborator._id
-          }`,
-        }
-      );
+      try {
+        await sendEmail(
+          collaborator.email,
+          "New transaction initiated by " +
+            `${user.companyName ? user.companyName : user.name}`,
+          "transactionNotification.html",
+          {
+            userName: collaborator.name,
+            transactionTitle: transactionTitle,
+            transactionId: req.transactionId,
+            createdBy:
+              user.name + `${user.companyName ? ` (${user.companyName})` : ""}`,
+            tlink: `${
+              process.env.NODE_ENV === "development"
+                ? process.env.CLIENT_URL_2
+                : process.env.DEP_URL
+            }/transaction/pre-authorize?tid=${req.transactionId}&userId=${
+              collaborator._id
+            }`,
+          }
+        );
+      } catch (error) {
+        notificationsDelivered = false;
+        console.log(
+          `Failed to send transaction notification to ${collaborator.email}: ${error.message}`
+        );
+      }
     }
   }
+
+  req.notificationsDelivered = notificationsDelivered;
 
   ingestTransaction({ transactionId: req.transactionId, ingestionReason: "FULL_REBUILD" });
 
@@ -285,17 +298,23 @@ export const verifyTransactionById = asyncHandler(async (req, res, next) => {
   ) {
     transaction.status = "completed";
 
-    //send transaction completion emails
-    await sendEmail(
-      transaction.ownerEmailId,
-      "Transaction Completed: " + transaction.title,
-      "transactionCompletionEmail.html",
-      {
-        userName: user.name,
-        transactionTitle: transaction.title,
-        transactionId: transaction.transactionId,
-      }
-    );
+    //send transaction completion emails (best-effort: don't fail verification on a mail error)
+    try {
+      await sendEmail(
+        transaction.ownerEmailId,
+        "Transaction Completed: " + transaction.title,
+        "transactionCompletionEmail.html",
+        {
+          userName: user.name,
+          transactionTitle: transaction.title,
+          transactionId: transaction.transactionId,
+        }
+      );
+    } catch (error) {
+      console.log(
+        `Failed to send transaction completion email to ${transaction.ownerEmailId}: ${error.message}`
+      );
+    }
   }
 
   await transaction.save();
