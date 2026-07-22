@@ -3,8 +3,7 @@ import fs from 'fs'
 import handlebars from 'handlebars'
 import { fileURLToPath  } from 'url'
 import path from 'path'
-import dotenv from 'dotenv'
-dotenv.config()
+import '../config/config.env.js'
 
 //create a transporter 
 const transporter = nodemailer.createTransport({
@@ -30,7 +29,7 @@ export const sendEmail = async (to, subject, templateName, replacements) => {
 
         //send email
         const mailOptions = {
-            from: 'HisaabKitaab <$process.env.SMTP_EMAIL>',
+            from: `HisaabKitaab <${process.env.SMTP_EMAIL}>`,
             to,
             subject,
             html,

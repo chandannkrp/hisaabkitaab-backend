@@ -1,5 +1,5 @@
+import './config/config.env.js'
 import express from 'express'
-import dotenv from 'dotenv'
 import helmet from 'helmet'
 import cors from 'cors'
 import morgan from 'morgan'
@@ -9,7 +9,6 @@ import { initSocket } from './socket/index.js'
 import connectDB from './config/db.connection.js'
 import userRoutes from './routes/route.user.js'
 import chatRoutes from './routes/route.chat.js'
-import transactionRoutes from './routes/route.transaction.js'
 import cookieParser from 'cookie-parser'
 import { globalErrorHandler } from './middlewares/middleware.error.js'
 import logger from './utils/logger.js'
@@ -27,16 +26,21 @@ process.on('unhandledRejection', (reason) => {
     console.error('UNHANDLED REJECTION:', err)
 })
 
-const allowedOrigins = [
-    process.env.DEP_URL,
-    process.env.DEP_URL_WWW,
-    process.env.CLIENT_URL,
-    process.env.CLIENT_URL_2
-]
+const getAllowedOrigins = () => {
+    const origins = [
+        process.env.DEP_URL,
+        process.env.DEP_URL_WWW,
+        process.env.CLIENT_URL,
+        process.env.CLIENT_URL_2
+    ].filter(Boolean)
 
-//env variables
-dotenv.config()
+    // Local dev frontends (Next.js) aren't in DEP_URL/CLIENT_URL, so allow them explicitly outside production
+    if (process.env.NODE_ENV !== 'production') {
+        origins.push('http://localhost:3000', 'http://127.0.0.1:3000')
+    }
 
+    return origins
+}
 
 //app initialization
 export const app = express()
@@ -52,7 +56,7 @@ app.set('trust proxy', 1);
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
+        if (getAllowedOrigins().indexOf(origin) === -1) {
             const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
             return callback(new Error(msg), false);
         }
@@ -69,19 +73,19 @@ express.urlencoded({ extended: true })
 
 
 //routes
+app.get("/health", (req, res) => {
+    res.status(200).send("Server is healthy");
+});
+
 app.use('/api/users', userRoutes)
-app.use('/api/transactions', transactionRoutes)
 app.use('/api/chats', chatRoutes)
+
 app.use((req, res, next) => {
     if (req.path.startsWith('/socket.io')) {
       return next(); // let Socket.IO handle it
     }
     return res.send('I am alive');
   });
-  
-app.get("/health", (req, res) => {
-    res.status(200).send("Server is healthy");
-});
 
 // Global error handler — must be registered after all routes
 app.use(globalErrorHandler)
@@ -92,4 +96,4 @@ connectDB(process.env.MONGO_URI)
 server.listen(process.env.PORT, () => {
     console.log(`Server started at http://localhost:${process.env.PORT}`)
 })
-
+ 

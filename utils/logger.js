@@ -1,6 +1,5 @@
 import winston from "winston"
-import dotenv from "dotenv"
-dotenv.config()
+import "../config/config.env.js"
 
 const logger = winston.createLogger({
     level: "info",

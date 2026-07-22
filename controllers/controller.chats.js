@@ -1,15 +1,12 @@
 import Message from "../models/model.message.js";
-import { Transaction } from "../models/model.transaction.js";
+import { asyncHandler } from "../middlewares/middleware.asyncHandler.js";
 
+export const getChatMessagesByTransactionId = asyncHandler(async (req, res) => {
+  const { tid } = req.params;
 
-export const getChatMessagesByTransactionId = async (req, res) => {
-        const { tid } = req.params;
+  const messages = await Message.find({ tid })
+    .populate("senderId", "name email")
+    .sort({ createdAt: 1 });
 
-        
-      
-        const messages = await Message.find({ tid })
-          .populate("senderId", "name email") 
-          .sort({ createdAt: 1 });
-      
-        res.json(messages);
-}
+  res.json(messages);
+});
